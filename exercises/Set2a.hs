@@ -31,11 +31,7 @@ years = [1982, 2004, 2020]
 -- Hint! remember the take and drop functions.
 
 takeFinal :: Int -> [a] -> [a]
-takeFinal n xs
-  | len <= n = xs
-  | otherwise = take n (drop (len - n) xs)
-  where
-    len = length xs
+takeFinal n xs = drop (length xs - n) xs
 
 ------------------------------------------------------------------------------
 -- Ex 3: Update an element at a certain index in a list. More
@@ -63,7 +59,7 @@ updateAt i x xs = take i xs ++ [x] ++ drop (i + 1) xs
 --   substring 0 4 "abcdefgh"  ==>  "abcd"
 
 substring :: Int -> Int -> String -> String
-substring i j s = take (j - i) (drop i s)
+substring i j s = drop i (take j s)
 
 ------------------------------------------------------------------------------
 -- Ex 5: check if a string is a palindrome. A palindrome is a string
@@ -92,10 +88,9 @@ isPalindrome str = str == reverse str
 --   palindromify "abracacabra" ==> "acaca"
 
 palindromify :: String -> String
-palindromify s =
-  if isPalindrome s
-    then s
-    else palindromify (substring 1 (length s - 1) s)
+palindromify s
+  | isPalindrome s = s
+  | otherwise = palindromify (tail (init s))
 
 ------------------------------------------------------------------------------
 -- Ex 7: implement safe integer division, that is, a function that
@@ -108,7 +103,8 @@ palindromify s =
 --   safeDiv 4 0  ==> Nothing
 
 safeDiv :: Integer -> Integer -> Maybe Integer
-safeDiv x y = if y == 0 then Nothing else Just (div x y)
+safeDiv x 0 = Nothing
+safeDiv x y = Just (div x y)
 
 ------------------------------------------------------------------------------
 -- Ex 8: implement a function greet that greets a person given a first
@@ -138,7 +134,8 @@ greet first (Just last) = "Hello, " ++ first ++ " " ++ last ++ "!"
 
 safeIndex :: [a] -> Int -> Maybe a
 safeIndex xs i
-  | (i < 0) || (i >= length xs) = Nothing
+  | i < 0 = Nothing
+  | i >= length xs = Nothing
   | otherwise = Just (xs !! i)
 
 ------------------------------------------------------------------------------
@@ -150,10 +147,8 @@ safeIndex xs i
 --   eitherDiv 4 0   ==> Left "4/0"
 
 eitherDiv :: Integer -> Integer -> Either String Integer
-eitherDiv x y =
-  if y == 0
-    then Left (show x ++ "/0")
-    else Right (div x y)
+eitherDiv x 0 = Left (show x ++ "/0")
+eitherDiv x y = Right (div x y)
 
 ------------------------------------------------------------------------------
 -- Ex 11: implement the function addEithers, which combines two values of type

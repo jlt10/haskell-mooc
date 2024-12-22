@@ -63,10 +63,14 @@ oddFactorial n
 -- > https://en.wikipedia.org/wiki/Euclidean_algorithm
 
 myGcd :: Integer -> Integer -> Integer
-myGcd a b = if y == 0 then x else myGcd (x - y) y
+myGcd 0 y = y
+myGcd x y =
+  if xAbs < yAbs
+    then myGcd yAbs xAbs
+    else myGcd (xAbs - yAbs) yAbs
   where
-    x = max a b
-    y = min a b
+    xAbs = abs x
+    yAbs = abs y
 
 ------------------------------------------------------------------------------
 -- Ex 4: Implement the function leftpad which adds space characters
@@ -127,7 +131,10 @@ smallestDivisor n
   | otherwise = smallestDivisor' n 2
 
 smallestDivisor' :: Integer -> Integer -> Integer
-smallestDivisor' n f = if mod n f == 0 then f else smallestDivisor' n (f + 1)
+smallestDivisor' n f =
+  if mod n f == 0
+    then f
+    else smallestDivisor' n (f + 1)
 
 ------------------------------------------------------------------------------
 -- Ex 7: implement a function isPrime that checks if the given number
