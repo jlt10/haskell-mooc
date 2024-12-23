@@ -100,10 +100,9 @@ palindrome s = s == reverse s
 
 capitalize :: String -> String
 capitalize = unwords . map capitalizeFirst . words
-
-capitalizeFirst :: String -> String
-capitalizeFirst "" = ""
-capitalizeFirst (c : xs) = toUpper c : xs
+  where 
+    capitalizeFirst "" = ""
+    capitalizeFirst (c:cs) = toUpper c:cs
 
 ------------------------------------------------------------------------------
 -- Ex 6: powers k max should return all the powers of k that are less
@@ -120,7 +119,7 @@ capitalizeFirst (c : xs) = toUpper c : xs
 --   * the function takeWhile
 
 powers :: Int -> Int -> [Int]
-powers k max = takeWhile (<= max) [k ^ i | i <- [0 .. max]]
+powers k max = takeWhile (<= max) $ map (k^) [0 .. max]
 
 ------------------------------------------------------------------------------
 -- Ex 7: implement a functional while loop. While should be a function
@@ -143,10 +142,9 @@ powers k max = takeWhile (<= max) [k ^ i | i <- [0 .. max]]
 --     ==> Avvt
 
 while :: (a -> Bool) -> (a -> a) -> a -> a
-while check update value =
-  if check value
-    then while check update (update value)
-    else value
+while check update value 
+  | not (check value) = value
+  | otherwise = while check update (update value)
 
 ------------------------------------------------------------------------------
 -- Ex 8: another version of a while loop. This time, the check
@@ -192,8 +190,7 @@ bomb x = Right (x - 1)
 -- Hint! This is a great use for list comprehensions
 
 joinToLength :: Int -> [String] -> [String]
-joinToLength size xs =
-  [a ++ b | a <- xs, b <- xs, length a + length b == size]
+joinToLength size xs = [c | a <- xs, b <- xs, let c = a ++ b, length c == size]
 
 ------------------------------------------------------------------------------
 -- Ex 10: implement the operator +|+ that returns a list with the first
@@ -207,10 +204,7 @@ joinToLength size xs =
 --   [] +|+ [True]        ==> [True]
 --   [] +|+ []            ==> []
 (+|+) :: [a] -> [a] -> [a]
-(+|+) [] [] = []
-(+|+) [] (h : t) = [h]
-(+|+) (h : t) [] = [h]
-(+|+) l1 l2 = [head l1, head l2]
+(+|+) xs ys = take 1 xs ++ take 1 ys
 
 ------------------------------------------------------------------------------
 -- Ex 11: remember the lectureParticipants example from Lecture 2? We
@@ -227,7 +221,7 @@ joinToLength size xs =
 --   sumRights [Left "bad!", Left "missing"]         ==>  0
 
 sumRights :: [Either a Int] -> Int
-sumRights = sum . rights
+sumRights = sum . map (either (const 0) id)
 
 ------------------------------------------------------------------------------
 -- Ex 12: recall the binary function composition operation
