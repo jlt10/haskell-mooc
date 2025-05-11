@@ -86,10 +86,10 @@ largest = foldr largestHelper []
 
 largestHelper :: Int -> [Int] -> [Int]
 largestHelper x [] = [x]
-largestHelper x ys
-  | x > head ys   = [x]
-  | x == head ys  = x : ys
-  | otherwise     = ys
+largestHelper x (y:ys)
+  | x > y   = [x]
+  | x == y  = x:y:ys
+  | otherwise = y:ys
 
 
 ------------------------------------------------------------------------------
