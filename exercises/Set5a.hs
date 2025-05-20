@@ -75,7 +75,7 @@ fred = Person 90 "Fred"
 
 -- getName returns the name of the person
 getName :: Person -> String
-getName (Person _ name )= name
+getName (Person _ name) = name
 
 -- getAge returns the age of the person
 getAge :: Person -> Int
@@ -134,7 +134,7 @@ data Student = Freshman | NthYear Int | Graduated
 study :: Student -> Student
 study Freshman = NthYear 1
 study (NthYear 7) = Graduated
-study (NthYear x) = NthYear (x + 1)
+study (NthYear x) = NthYear (x+1)
 study Graduated = Graduated
 
 ------------------------------------------------------------------------------
@@ -204,18 +204,13 @@ toggle (Down x) = Up x
 data Color = Red | Green | Blue | Mix Color Color | Invert Color
   deriving Show
 
-rgbAvg :: Double -> Double -> Double
-rgbAvg a b = (a + b) / 2.0
-
 rgb :: Color -> [Double]
 rgb Red = [1.0, 0.0, 0.0]
 rgb Green = [0.0, 1.0, 0.0]
 rgb Blue = [0.0, 0.0, 1.0]
-rgb (Mix c1 c2) = [rgbAvg r1 r2, rgbAvg b1 b2, rgbAvg g1 g2]
-  where
-    [r1, b1, g1] = rgb c1
-    [r2, b2, g2] = rgb c2
-rgb (Invert c) = [1.0-r, 1.0-b, 1.0-g] where [r,b,g] = rgb c
+rgb (Mix c1 c2) = zipWith rgbAvg (rgb c1) (rgb c2)
+  where rgbAvg a b = (a + b) / 2.0
+rgb (Invert c) = map (1-) $ rgb c
 
 ------------------------------------------------------------------------------
 -- Ex 9: define a parameterized datatype OneOrTwo that contains one or
@@ -278,8 +273,9 @@ fromNat (PlusOne n) = 1 + fromNat n
 toNat :: Int -> Maybe Nat
 toNat z
   | z < 0          = Nothing
-  | z == 0         = Just Zero
-  | otherwise      = Just (PlusOne $ fromJust $ toNat (z-1))
+  | otherwise        = Just (go z)
+  where go 0 = Zero
+        go n = PlusOne (go (n-1))
 
 ------------------------------------------------------------------------------
 -- Ex 12: While pleasingly simple in its definition, the Nat datatype is not
@@ -339,19 +335,23 @@ inc (O b) = I b
 inc (I b) = O (inc b)
 
 prettyPrint :: Bin -> String
-prettyPrint End = ""
-prettyPrint (O b) = prettyPrint b ++ "0"
-prettyPrint (I b) = prettyPrint b ++ "1"
+prettyPrint b = prettyPrint' b ""
+  where
+    prettyPrint' End   s = s
+    prettyPrint' (O b) s = prettyPrint' b ('0':s)
+    prettyPrint' (I b) s = prettyPrint' b ('1':s)
 
 fromBin :: Bin -> Int
 fromBin End = 0
 fromBin (O b) = 2 * fromBin b
-fromBin (I b) = 1 + (2 * fromBin b)
+fromBin (I b) = 2 * fromBin b + 1
+
+bits :: Int -> [Int]
+bits 0 = [0]
+bits 1 = [1]
+bits x = mod x 2 : bits (div x 2)
 
 toBin :: Int -> Bin
-toBin = go where
-  go x
-    | x == 0            = O End
-    | x == 1            = I End
-    | x `mod` 2 == 1    = I (go (div (x-1) 2))
-    | otherwise         = O (go (div x 2))
+toBin x = foldr helper End (bits x)
+  where helper 0 = O
+        helper _ = I
