@@ -156,7 +156,8 @@ cull val (Node a l r)
 
 isOrdered :: Ord a => Tree a -> Bool
 isOrdered Empty = True
-isOrdered (Node a l r) = allValues (<a) l && allValues (>a) r && isOrdered l && isOrdered r
+isOrdered (Node a l r) = 
+  allValues (<a) l && allValues (>a) r && isOrdered l && isOrdered r
 
 ------------------------------------------------------------------------------
 -- Ex 8: a path in a tree can be represented as a list of steps that
@@ -199,8 +200,8 @@ walk (StepR:path) (Node _ _ r) = walk path r
 --   set [StepL,StepR] 1 (Node 0 Empty Empty)  ==>  (Node 0 Empty Empty)
 
 set :: [Step] -> a -> Tree a -> Tree a
-set path val Empty = Empty
-set [] val (Node a l r) = Node val l r
+set _ _ Empty = Empty
+set [] val (Node _ l r) = Node val l r
 set (StepL:path) val (Node a l r) = Node a (set path val l) r
 set (StepR:path) val (Node a l r) = Node a l (set path val r)
 
@@ -218,11 +219,13 @@ set (StepR:path) val (Node a l r) = Node a l (set path val r)
 --                    (Node 5 Empty Empty))                     ==>  Just [StepL,StepR]
 
 search :: Eq a => a -> Tree a -> Maybe [Step]
-search val = search' [] where 
-  search' path Empty = Nothing
-  search' path (Node a l r)
-    | a == val    = Just $ reverse path  -- retrace steps backwards
-    | otherwise   = case search' (StepL:path) l of 
-                      Nothing -> search' (StepR:path) r
-                      result  -> result
+search _ Empty = Nothing
+search val (Node a l r)
+  | a == val  = Just []
+  | otherwise = case search val l of
+                  Just xs -> Just (StepL:xs)
+                  Nothing -> case search val r of
+                               Just xs -> Just (StepR:xs)
+                               Nothing -> Nothing
+
 
