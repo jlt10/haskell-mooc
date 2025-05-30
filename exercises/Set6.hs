@@ -105,8 +105,7 @@ instance Price a => Price (Maybe a) where
   price (Just a) = price a
 
 instance Price a => Price [a] where
-  price [] = 0
-  price (x:xs) = price x + price xs
+  price xs = sum (map price xs)
 
 
 ------------------------------------------------------------------------------
@@ -120,10 +119,9 @@ data Number = Finite Integer | Infinite
   deriving (Show,Eq)
 
 instance Ord Number where 
-  compare Infinite Infinite     = EQ
-  compare Infinite _            = GT
-  compare _ Infinite            = LT
-  compare (Finite x) (Finite y) = compare x y
+  (Finite x) <= (Finite y) = x <= y
+  _          <= Infinite   = True
+  _          <= _          = False
 
 ------------------------------------------------------------------------------
 -- Ex 8: rational numbers have a numerator and a denominator that are
@@ -200,10 +198,18 @@ instance Num RationalNumber where
   (RationalNumber a1 b1) * (RationalNumber a2 b2) = 
     simplify $ RationalNumber (a1 * a2) (b1 * b2)
 
-  abs (RationalNumber a b) = RationalNumber (abs a) (abs b)
-  signum (RationalNumber a b) = RationalNumber (signum a) (signum b)
+  abs p@(RationalNumber a b) 
+    | a * b < 0 = RationalNumber (-a) b
+    | otherwise = p
+
+  signum (RationalNumber a b)
+    | a * b < 0 = RationalNumber (-1) 1
+    | a == 0    = RationalNumber 0 1
+    | otherwise = RationalNumber 1 1
+
   fromInteger x = RationalNumber x 1
-  negate (RationalNumber a b) = RationalNumber (negate a) b
+
+  negate (RationalNumber a b) = RationalNumber (-a) b
 
 ------------------------------------------------------------------------------
 -- Ex 11: a class for adding things. Define a class Addable with a
@@ -223,11 +229,11 @@ class Addable a where
 
 instance Addable Integer where
   zero = 0
-  add a b = a + b
+  add = (+)
 
 instance Addable [a] where
   zero = []
-  add xs ys = xs ++ ys
+  add = (++)
 
 ------------------------------------------------------------------------------
 -- Ex 12: cycling. Implement a type class Cycle that contains a
