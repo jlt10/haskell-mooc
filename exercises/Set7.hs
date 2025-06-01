@@ -53,8 +53,7 @@ emptySet = Set []
 
 -- member tests if an element is in a set
 member :: Eq a => a -> Set a -> Bool
-member _ (Set []) = False
-member x (Set (y:ys)) = (x == y) || member x (Set ys)
+member a (Set xs) = a `elem` xs
 
 -- add a member to a set
 add :: (Ord a, Eq a) => a -> Set a -> Set a
@@ -97,19 +96,19 @@ add x s@(Set (y:ys))
 data Event = AddEggs | AddFlour | AddSugar | Mix | Bake
   deriving (Eq,Show)
 
-data State = Start | Error | NeedsBoth | NeedsSugar | NeedsFlour | Ready | Mixed | Finished
+data State = Start | Eggs | EggsFlour | EggsSugar | Ready | Mixed | Finished | Error
   deriving (Eq,Show)
 
 step :: State -> Event -> State
-step Start AddEggs = NeedsBoth
-step NeedsBoth AddFlour = NeedsSugar
-step NeedsBoth AddSugar = NeedsFlour
-step NeedsSugar AddSugar = Ready
-step NeedsFlour AddFlour = Ready
-step Ready Mix = Mixed
-step Mixed Bake = Finished
-step Finished _ = Finished
-step _ _ = Error
+step Start AddEggs      = Eggs
+step Eggs AddFlour      = EggsFlour
+step Eggs AddSugar      = EggsSugar
+step EggsFlour AddSugar = Ready
+step EggsSugar AddFlour = Ready
+step Ready Mix          = Mixed
+step Mixed Bake         = Finished
+step Finished _         = Finished
+step _ _                = Error
 
 -- do not edit this
 bake :: [Event] -> State
@@ -129,7 +128,7 @@ bake events = go Start events
 --   average (1.0 :| [2.0,3.0])  ==>  2.0
 
 average :: Fractional a => NonEmpty a -> a
-average xs = sum xs / fromIntegral (length xs)
+average (a :| as) = (a + sum as) / (1 + fromIntegral (length as))
 
 ------------------------------------------------------------------------------
 -- Ex 5: reverse a NonEmpty list.
@@ -137,7 +136,9 @@ average xs = sum xs / fromIntegral (length xs)
 -- PS. The Data.List.NonEmpty type has been imported for you
 
 reverseNonEmpty :: NonEmpty a -> NonEmpty a
-reverseNonEmpty (x :| xs) = y :| ys where (y:ys) = reverse (x:xs)
+reverseNonEmpty (x :| xs) = case reverse xs of
+  [] -> x :| []
+  (y:ys) -> y :| (ys ++ [x])
 
 ------------------------------------------------------------------------------
 -- Ex 6: implement Semigroup instances for the Distance, Time and
@@ -253,18 +254,10 @@ data PasswordRequirement =
 
 passwordAllowed :: String -> PasswordRequirement -> Bool
 passwordAllowed pw (MinimumLength n) = length pw >= n
-
-passwordAllowed pw (ContainsSome cs) = foldr helper False cs where
-  helper c result = result || elem c pw
-
-passwordAllowed pw (DoesNotContain cs) =
-  not $ passwordAllowed pw (ContainsSome cs)
-
-passwordAllowed pw (And pr1 pr2) =
-  passwordAllowed pw pr1 && passwordAllowed pw pr2
-
-passwordAllowed pw (Or pr1 pr2) =
-  passwordAllowed pw pr1 || passwordAllowed pw pr2
+passwordAllowed pw (ContainsSome cs) = any (`elem` cs) pw
+passwordAllowed pw (DoesNotContain cs) = not $ passwordAllowed pw (ContainsSome cs)
+passwordAllowed pw (And req1 req2) = passwordAllowed pw req1 && passwordAllowed pw req2
+passwordAllowed pw (Or req1 req2) = passwordAllowed pw req1 || passwordAllowed pw req2
 
 ------------------------------------------------------------------------------
 -- Ex 10: a DSL for simple arithmetic expressions with addition and
@@ -287,23 +280,23 @@ passwordAllowed pw (Or pr1 pr2) =
 --
 
 data Arithmetic = Literal Integer
-                | Addition Arithmetic Arithmetic
-                | Multiplication Arithmetic Arithmetic
+                | Plus Arithmetic Arithmetic
+                | Times Arithmetic Arithmetic
   deriving Show
 
 literal :: Integer -> Arithmetic
 literal = Literal
 
 operation :: String -> Arithmetic -> Arithmetic -> Arithmetic
-operation "+" = Addition
-operation "*" = Multiplication
+operation "+" = Plus
+operation "*" = Times
 
 evaluate :: Arithmetic -> Integer
 evaluate (Literal x) = x
-evaluate (Addition x y) = evaluate x + evaluate y
-evaluate (Multiplication x y) = evaluate x * evaluate y
+evaluate (Plus x y) = evaluate x + evaluate y
+evaluate (Times x y) = evaluate x * evaluate y
 
 render :: Arithmetic -> String
 render (Literal x) = show x
-render (Addition x y) = "(" ++ render x ++ "+" ++ render y ++ ")"
-render (Multiplication x y) = "(" ++ render x ++ "*" ++ render y ++ ")"
+render (Plus x y) = "(" ++ render x ++ "+" ++ render y ++ ")"
+render (Times x y) = "(" ++ render x ++ "*" ++ render y ++ ")"
