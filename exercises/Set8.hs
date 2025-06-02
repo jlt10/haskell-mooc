@@ -135,8 +135,8 @@ renderListExample = renderList justADot (9,11) (9,11)
 dotAndLine :: Picture
 dotAndLine = Picture f
   where f (Coord 3 4) = white
-        f (Coord x y) | y==8 = pink
-                      | otherwise = black
+        f (Coord _ 8) = pink
+        f _           = black
 
 ------------------------------------------------------------------------------
 
@@ -246,8 +246,7 @@ exampleCircle = fill red (circle 80 100 200)
 
 rectangle :: Int -> Int -> Int -> Int -> Shape
 rectangle x0 y0 w h = Shape f
-  where f (Coord x y) | x<x0 || y<y0  = False
-                      | otherwise     = (x-x0)<w && (y-y0)<h
+  where f (Coord x y) = and [x >= x0, x < x0+w, y >= y0, y < y0+h]
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -423,9 +422,9 @@ flipCoordY (Coord x y) = Coord x (-y)
 data Flip = FlipX | FlipY | FlipXY
   deriving Show
 instance Transform Flip where
-  apply FlipX (Picture f) = Picture (f . flipCoordX)
-  apply FlipY (Picture f) = Picture (f . flipCoordY)
-  apply FlipXY p = flipXY p
+  apply FlipX (Picture f) = Picture (\(Coord x y) -> f (Coord (negate x) y))
+  apply FlipY (Picture f) = Picture (\(Coord x y) -> f (Coord x (negate y)))
+  apply FlipXY (Picture f) = Picture (f . flipCoordXY)
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -478,19 +477,13 @@ checkered = flipBlend largeVerticalStripes2
 
 data Blur = Blur
   deriving Show
-
-(+!) :: Color -> Color -> Color
-(Color r1 g1 b1) +! (Color r2 g2 b2) = Color (r1+r2) (g1+g2) (b1+b2)
-
-avgNeighbors :: Picture -> Coord -> Color
-avgNeighbors (Picture f) c@(Coord x y) =
-  Color (getRed sumColor `div` 5) (getGreen sumColor `div` 5) (getBlue sumColor `div` 5)
-  where
-    neighbors = [c, Coord x (y-1), Coord x (y+1), Coord (x-1) y, Coord (x+1) y]
-    sumColor = foldr ((+!) . f) black neighbors 
-
 instance Transform Blur where
-  apply _ p = Picture (avgNeighbors p)
+  apply Blur (Picture f) = Picture g 
+    where g c = avg (map f (neighbors c))
+          neighbors (Coord x y)= [Coord x y, Coord x (y-1), Coord x (y+1), Coord (x-1) y, Coord (x+1) y]
+          avgRgb comp n cs = sum (map comp cs) `div` n
+          avg cs = let n = length cs 
+                       in Color (avgRgb getRed n cs) (avgRgb getGreen n cs) (avgRgb getBlue n cs)
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -508,9 +501,8 @@ data BlurMany = BlurMany Int
   deriving Show
 
 instance Transform BlurMany where
-  apply (BlurMany n) p = go n p
-    where go 0 p = p
-          go n p = go (n-1) (apply Blur p)
+  apply (BlurMany 0) p = p
+  apply (BlurMany n) p = apply (BlurMany (n-1)) (apply Blur p)
 ------------------------------------------------------------------------------
 
 -- Here's a blurred version of our original snowman. See it by running
